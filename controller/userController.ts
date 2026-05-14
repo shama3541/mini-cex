@@ -1,9 +1,8 @@
-import { type Request, type Response } from "express"
-import { PrismaClient } from "@prisma/client"
 
 import { type Request, type Response } from "express"
 import { PrismaClient } from "@prisma/client"
 import { PrismaPg } from "@prisma/adapter-pg"
+import{hash, password} from "bun"
 
 const prisma = new PrismaClient({
     adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! })
@@ -14,12 +13,20 @@ export async function UserEndpoint(req: Request, res: Response) {
 }
 
 export async function CreateUser(req: Request, res: Response): Promise<void> {
-    console.log("CreateUser hit")
-    console.log("Body:", req.body)
-    const { email, firstName, lastName, password } = req.body
+    const { email, firstName, lastName} = req.body
+    const plainpassword=req.body.password
+    const hashedpassword= await password.hash(plainpassword,{
+        algorithm:"bcrypt",
+        cost:4
+    })
     try {
         const user = await prisma.user.create({
-            data: { email, firstName, lastName, password }
+            data: { 
+                email: email,
+                firstName:firstName,
+                lastName:lastName,
+                password:hashedpassword
+            }
         })
 
         res.status(201).json({
@@ -29,5 +36,34 @@ export async function CreateUser(req: Request, res: Response): Promise<void> {
     } catch (error) {
         console.log("Error:", error)
         res.status(500).json({ message: "Error while creating user" })
+    }
+}
+
+
+export async function SignIn(req: Request, res: Response): Promise<void> {
+    try {
+        const { email, password: plainPassword } = req.body
+
+        const user = await prisma.user.findUnique({
+            where: { email }
+        })
+
+        if (!user) {
+            res.status(404).json({ message: "User not found" })
+            return
+        }
+
+        const isMatch = await password.verify(plainPassword, user.password)
+
+        if (isMatch) {
+            res.status(200).json({ message: "Login successful" })
+            return
+        }
+
+        res.status(401).json({ message: "Incorrect password" })
+
+    } catch (error) {
+        console.log("Error:", error)
+        res.status(500).json({ message: "Error while logging in" })
     }
 }
