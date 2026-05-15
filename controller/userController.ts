@@ -9,7 +9,11 @@ const prisma = new PrismaClient({
 });
 
 export async function UserEndpoint(req: Request, res: Response) {
-  res.send("the user route is working perfectly good");
+  const email = req.body.email
+  res.status(200).json({
+    email:email,
+    message:"Auth end point is working good"
+  })
 }
 
 export async function CreateUser(req: Request, res: Response): Promise<void> {

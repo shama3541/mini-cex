@@ -1,14 +1,14 @@
-import {Router} from "express"
+import { Router } from "express";
+
+import { UserEndpoint, CreateUser, SignIn } from "../controller/userController";
+import { signInSchema,createUserSchema } from "../middleware/zodSchema";
+import { UserAuth,MiddlewareAuth } from "../middleware/middleWare";
 
 
-import { UserEndpoint,CreateUser,SignIn } from "../controller/userController"
+const router = Router();
 
-const router = Router ()
+router.get("/userendpoint",MiddlewareAuth, UserEndpoint);
+router.post("/signup",UserAuth(createUserSchema), CreateUser);
+router.post("/signin",UserAuth(createUserSchema), SignIn);
 
-
-router.get("/userendpoint",UserEndpoint)
-router.post("/signup",CreateUser)
-router.post("/signin",SignIn)
-
-
-export default router
+export default router;
